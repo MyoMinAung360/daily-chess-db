@@ -39,7 +39,7 @@ for phase in phases:
         diagram_number = 1
         for _, row in selected_puzzles.iterrows():
             title = f"{phase.capitalize()} ({level})"
-            description = row['OpeningTags'] if phase == 'opening' and pd.notna(row['OpeningTags']) else row['Themes']
+            description = row['OpeningTags'] if phase == 'opening' and pd.notna(row['OpeningTags']) else str(row['Themes'])
 
             # Pipe (|) သင်္ကေတဖြင့် အမှားရွှေ့ကွက်ကို ခွဲထုတ်ခြင်း
             original_moves = str(row['Moves'])
@@ -48,17 +48,20 @@ for phase in phases:
             if len(move_list) > 1:
                 blunder_move = move_list[0]
                 solution_only = move_list[1:]
-                formatted_solution = f"{blunder_move}|{','.join(solution_only)}"
+                # 🌟 App မှ Json Decode လုပ်နိုင်ရန် Array ပုံစံဖြင့် သိမ်းပါမည် 🌟
+                formatted_solution = json.dumps([f"{blunder_move}|{','.join(solution_only)}"])
             else:
-                formatted_solution = ",".join(move_list) 
+                formatted_solution = json.dumps([",".join(move_list)])
 
             daily_puzzles.append({
+                'chapter_info': page_number,   # Flutter မှ ဖတ်မည့်အမည်
+                'diagram_no': diagram_number,  # Flutter မှ ဖတ်မည့်အမည်
                 'title': title,
                 'description': description,
-                'fen': row['FEN'],
-                'solution': formatted_solution,
-                'page': page_number,
-                'dia': diagram_number
+                'puzzle_mode': 1,
+                'question_fen': row['FEN'],    # Flutter မှ ဖတ်မည့်အမည်
+                'solution_list': formatted_solution, # Flutter မှ ဖတ်မည့်အမည်
+                'hint_mode': 1
             })
             diagram_number += 1
             
@@ -69,23 +72,46 @@ conn = sqlite3.connect('daily_puzzles.db')
 cursor = conn.cursor()
 
 cursor.execute('DROP TABLE IF EXISTS puzzles')
+
+# 🌟 Flutter App မှ puzzle_model.dart ဖတ်မည့် Table ပုံစံအတိုင်း အတိအကျ တည်ဆောက်ခြင်း 🌟
 cursor.execute('''
     CREATE TABLE puzzles (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        chapter_info INTEGER,
+        diagram_no INTEGER,
         title TEXT,
         description TEXT,
-        fen TEXT,
-        solution TEXT,
-        page INTEGER,
-        dia INTEGER
+        puzzle_mode INTEGER,
+        question_fen TEXT,
+        highlight_squares TEXT,
+        spawn_piece TEXT,
+        is_looping INTEGER,
+        allow_king_sacrifice INTEGER,
+        max_moves INTEGER,
+        hint_mode INTEGER,
+        solution_list TEXT,
+        target_status TEXT,
+        correct_rights TEXT,
+        correct_option TEXT,
+        correct_status TEXT,
+        solution_move TEXT,
+        arrows_data TEXT,
+        explanation_text TEXT,
+        explanation_highlights TEXT
     )
 ''')
 
 for p in daily_puzzles:
     cursor.execute('''
-        INSERT INTO puzzles (title, description, fen, solution, page, dia)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ''', (p['title'], p['description'], p['fen'], p['solution'], p['page'], p['dia']))
+        INSERT INTO puzzles (
+            chapter_info, diagram_no, title, description, puzzle_mode, 
+            question_fen, solution_list, hint_mode, is_looping, allow_king_sacrifice
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, 0)
+    ''', (
+        p['chapter_info'], p['diagram_no'], p['title'], p['description'], p['puzzle_mode'],
+        p['question_fen'], p['solution_list'], p['hint_mode']
+    ))
 
 conn.commit()
 conn.close()
@@ -102,8 +128,7 @@ try:
         firebase_admin.initialize_app(cred)
     db = firestore.client()
 
-    # GitHub Repository အမည်ကို ယူ၍ Raw URL တည်ဆောက်ခြင်း
-    repo_name = os.environ.get('GITHUB_REPOSITORY') # ဥပမာ: MyoMinAung360/daily-chess-db
+    repo_name = os.environ.get('GITHUB_REPOSITORY')
     download_url = f"https://raw.githubusercontent.com/{repo_name}/main/daily_puzzles.db"
 
     doc_ref = db.collection('books').document('daily_puzzles')
@@ -115,7 +140,7 @@ try:
         'diagrams': 120,
         'isVisible': True,
         'order': -1,
-        'version': firestore.Increment(1) # App ဘက်မှ ဒေါင်းလုဒ်ဆွဲရန် Version ကို ၁ တိုးမည်
+        'version': firestore.Increment(1)
     }, merge=True)
 
     print("✅ အားလုံး အောင်မြင်စွာ ပြီးစီးပါပြီ!")
