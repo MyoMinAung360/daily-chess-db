@@ -41,26 +41,25 @@ for phase in phases:
             title = f"{phase.capitalize()} ({level})"
             description = row['OpeningTags'] if phase == 'opening' and pd.notna(row['OpeningTags']) else str(row['Themes'])
 
-            # Pipe (|) သင်္ကေတဖြင့် အမှားရွှေ့ကွက်ကို ခွဲထုတ်ခြင်း
+            # 🌟 ပြုပြင်ထားသောအပိုင်း: Json Array အစား Mock Data အတိုင်း စာသားရိုးရိုး ပြန်သုံးပါမည် 🌟
             original_moves = str(row['Moves'])
             move_list = original_moves.strip().split() 
             
             if len(move_list) > 1:
                 blunder_move = move_list[0]
                 solution_only = move_list[1:]
-                # 🌟 App မှ Json Decode လုပ်နိုင်ရန် Array ပုံစံဖြင့် သိမ်းပါမည် 🌟
-                formatted_solution = json.dumps([f"{blunder_move}|{','.join(solution_only)}"])
+                formatted_solution = f"{blunder_move}|{','.join(solution_only)}"
             else:
-                formatted_solution = json.dumps([",".join(move_list)])
+                formatted_solution = ",".join(move_list)
 
             daily_puzzles.append({
-                'chapter_info': page_number,   # Flutter မှ ဖတ်မည့်အမည်
-                'diagram_no': diagram_number,  # Flutter မှ ဖတ်မည့်အမည်
+                'chapter_info': page_number,   
+                'diagram_no': diagram_number,  
                 'title': title,
                 'description': description,
                 'puzzle_mode': 1,
-                'question_fen': row['FEN'],    # Flutter မှ ဖတ်မည့်အမည်
-                'solution_list': formatted_solution, # Flutter မှ ဖတ်မည့်အမည်
+                'question_fen': row['FEN'],    
+                'solution_list': formatted_solution, 
                 'hint_mode': 1
             })
             diagram_number += 1
@@ -73,7 +72,6 @@ cursor = conn.cursor()
 
 cursor.execute('DROP TABLE IF EXISTS puzzles')
 
-# 🌟 Flutter App မှ puzzle_model.dart ဖတ်မည့် Table ပုံစံအတိုင်း အတိအကျ တည်ဆောက်ခြင်း 🌟
 cursor.execute('''
     CREATE TABLE puzzles (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -118,7 +116,7 @@ conn.close()
 print("Database ဖန်တီးမှု အောင်မြင်ပါသည်။")
 
 # ---------------------------------------------------------
-# 🌟 Firebase တွင် လိပ်စာနှင့် Version ကို Update လုပ်မည့် အပိုင်း 🌟
+# Firebase Update
 # ---------------------------------------------------------
 print("၄။ Firebase တွင် Version အသစ်ကို ကြေညာနေပါသည်...")
 try:
