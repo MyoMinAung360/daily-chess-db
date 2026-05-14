@@ -1,0 +1,50 @@
+name: Generate Daily Puzzles
+
+on:
+  schedule:
+    - cron: '30 23 * * *' # မြန်မာစံတော်ချိန် မနက် ၆ နာရီတိုင်း
+  workflow_dispatch: # Manual Run ရန် ခလုတ်
+
+# GitHub ထဲသို့ .db ဖိုင် ပြန် Save နိုင်ရန် Permission ပေးခြင်း
+permissions:
+  contents: write 
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Install Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install pandas firebase-admin
+
+    - name: Install Zstandard (zstd)
+      run: sudo apt-get install zstd
+
+    - name: Download and Extract Lichess DB
+      run: |
+        wget https://database.lichess.org/lichess_db_puzzle.csv.zst
+        zstd -d lichess_db_puzzle.csv.zst
+
+    - name: Run Puzzle Generator & Update Firebase
+      env:
+        FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        GITHUB_REPOSITORY: ${{ github.repository }}
+      run: python generate_daily_puzzles.py
+
+    - name: Commit and Push Database back to GitHub
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add daily_puzzles.db
+        git commit -m "Automated daily puzzle update" || echo "No changes to commit"
+        git push
