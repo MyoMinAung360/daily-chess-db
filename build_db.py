@@ -5,66 +5,75 @@ import os
 import chess
 import json
 import codecs
+import re
 
-# 🌟 ဆရာပြောသော Lichess CSV Link အား ထည့်သွင်းထားပါသည် 🌟
 CSV_URL = "https://database.lichess.org/lichess_db_puzzle.csv" 
 
-def get_level(rating_str):
+# 🌟 Level နှင့် Rating Rank ကို တစ်ပါတည်း တွက်ထုတ်ပေးမည့် Function 🌟
+def get_level_and_range(rating_str):
     try:
         r = int(float(rating_str))
-        if r < 1000: return 1
-        elif r < 1200: return 2
-        elif r < 1400: return 3
-        elif r < 1600: return 4
-        elif r < 1800: return 5
-        elif r < 2000: return 6
-        elif r < 2200: return 7
-        elif r < 2400: return 8
-        else: return 9
-    except: return 1 
+        if r < 1000: return 1, "Under 1000"
+        elif r < 1200: return 2, "1000-1199"
+        elif r < 1400: return 3, "1200-1399"
+        elif r < 1600: return 4, "1400-1599"
+        elif r < 1800: return 5, "1600-1799"
+        elif r < 2000: return 6, "1800-1999"
+        elif r < 2200: return 7, "2000-2199"
+        elif r < 2400: return 8, "2200-2399"
+        else: return 9, "2400+"
+    except: return 1, "Under 1000"
 
-def get_chapter(themes_str):
+# 🌟 Chapter နှင့် Title အမည်ကို တွက်ထုတ်ပေးမည့် Function 🌟
+def get_chapter_name(themes_str):
     t = themes_str.lower()
-    if 'opening' in t: return 1
-    elif 'middlegame' in t: return 2
-    elif 'endgame' in t: return 3
-    else: return 4 
+    if 'opening' in t: return 1, "Opening"
+    elif 'middlegame' in t: return 2, "Middlegame"
+    elif 'endgame' in t: return 3, "Endgame"
+    else: return 4, "Mix Tactics"
 
 def build_databases():
     print("🌐 Downloading and reading Lichess CSV...")
     
-    # Github တွင် ဖိုင်ဆိုဒ်ကြီး၍ Error မတက်စေရန် တစ်ကြောင်းချင်း ဖတ်မည့်စနစ်
     response = urllib.request.urlopen(CSV_URL)
     reader = csv.DictReader(codecs.iterdecode(response, 'utf-8'))
     
     level_buckets = {i: {1:[], 2:[], 3:[], 4:[]} for i in range(1, 10)}
 
-    print("📂 Processing puzzles...")
+    print("📂 Processing puzzles (Building Static DBs)...")
     for row in reader:
         fen = row.get('FEN', row.get('fen', ''))
-        moves = row.get('Moves', row.get('moves', ''))
+        moves_string = row.get('Moves', row.get('moves', ''))
         rating = row.get('Rating', row.get('rating', '1000'))
         themes = row.get('Themes', row.get('themes', 'mix'))
 
-        if not fen or not moves: continue
+        if not fen or not moves_string: continue
 
-        lvl = get_level(rating)
-        chap = get_chapter(themes)
+        lvl, rating_range = get_level_and_range(rating)
+        chap, chap_name = get_chapter_name(themes)
         
-        # Level ၁ ခုလျှင် Chapter တစ်ခုကို ၁၀ ပုဒ် ပြည့်/မပြည့် စစ်မည်
         if len(level_buckets[lvl][chap]) < 10:
-            moves_list = moves.split()
+            moves_list = re.findall(r'[a-h][1-8][a-h][1-8][qrbn]?', moves_string.lower())
+
             if len(moves_list) > 1:
+                first_move = moves_list[0]
                 try:
                     board = chess.Board(fen)
-                    board.push_uci(moves_list[0])
+                    board.push_uci(first_move)
                     new_fen = board.fen()
-                    new_moves = json.dumps([" ".join(moves_list[1:])])
+                    
+                    new_moves_string = re.sub(r'^' + first_move + r'[,\s|]*', '', moves_string, flags=re.IGNORECASE)
+                    new_solution_list_str = json.dumps([new_moves_string])
+                    
                     diag_no = len(level_buckets[lvl][chap]) + 1
-                    level_buckets[lvl][chap].append((new_fen, new_moves, chap, diag_no))
+                    
+                    # 🌟 (အသစ်) Title နှင့် Description ကို ဖန်တီးခြင်း 🌟
+                    title = f"{chap_name} ({rating_range})" # ဥပမာ: "Opening (1000-1199)"
+                    description = themes.replace(" ", ", ") # Lichess Tag များကို ကော်မာခံ၍ ပြမည်
+                    
+                    level_buckets[lvl][chap].append((new_fen, new_solution_list_str, chap, diag_no, title, description))
                 except: pass 
                 
-        # Database အားလုံး ပုစ္ဆာပြည့်သွားပါက ဆက်မဖတ်ဘဲ ရပ်မည် (အချိန်သက်သာစေရန်)
         is_full = all(len(level_buckets[l][c]) == 10 for l in range(1, 10) for c in range(1, 5))
         if is_full:
             print("✅ ပုစ္ဆာအားလုံး ပြည့်သွားပါပြီ။ CSV ဖတ်ခြင်းကို ရပ်ပါမည်။")
@@ -77,10 +86,25 @@ def build_databases():
         
         conn = sqlite3.connect(db_name)
         cursor = conn.cursor()
-        cursor.execute("CREATE TABLE puzzles (id INTEGER PRIMARY KEY AUTOINCREMENT, question_fen TEXT, solution_list TEXT, chapter_info INTEGER, diagram_no INTEGER)")
+        
+        # 🌟 (အသစ်) Table တွင် title နှင့် description Column အသစ်များ ထည့်သွင်းခြင်း 🌟
+        cursor.execute('''
+            CREATE TABLE puzzles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, 
+                question_fen TEXT, 
+                solution_list TEXT, 
+                chapter_info INTEGER, 
+                diagram_no INTEGER, 
+                title TEXT, 
+                description TEXT
+            )
+        ''')
         
         for chap in range(1, 5):
-            cursor.executemany("INSERT INTO puzzles (question_fen, solution_list, chapter_info, diagram_no) VALUES (?, ?, ?, ?)", level_buckets[lvl][chap])
+            cursor.executemany('''
+                INSERT INTO puzzles (question_fen, solution_list, chapter_info, diagram_no, title, description) 
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', level_buckets[lvl][chap])
             
         conn.commit()
         conn.close()
