@@ -1,7 +1,7 @@
 name: Generate Puzzle DBs
 
 on:
-  workflow_dispatch: # 🌟 ဒီစာကြောင်းက Github တွင် "Run" ခလုတ်ကို ပေါ်စေပါသည် 🌟
+  workflow_dispatch:
 
 jobs:
   build:
@@ -25,4 +25,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: SQLite-Databases
-          path: "*.db"
+          path: "level_*.db"
