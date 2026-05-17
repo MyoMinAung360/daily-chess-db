@@ -9,7 +9,6 @@ import re
 
 CSV_URL = "https://database.lichess.org/lichess_db_puzzle.csv" 
 
-# 🌟 Level နှင့် Rating Rank ကို တစ်ပါတည်း တွက်ထုတ်ပေးမည့် Function 🌟
 def get_level_and_range(rating_str):
     try:
         r = int(float(rating_str))
@@ -24,7 +23,6 @@ def get_level_and_range(rating_str):
         else: return 9, "2400+"
     except: return 1, "Under 1000"
 
-# 🌟 Chapter နှင့် Title အမည်ကို တွက်ထုတ်ပေးမည့် Function 🌟
 def get_chapter_name(themes_str):
     t = themes_str.lower()
     if 'opening' in t: return 1, "Opening"
@@ -62,14 +60,15 @@ def build_databases():
                     board.push_uci(first_move)
                     new_fen = board.fen()
                     
-                    new_moves_string = re.sub(r'^' + first_move + r'[,\s|]*', '', moves_string, flags=re.IGNORECASE)
+                    # 🌟 (အသစ်) ပထမအကွက်ကို ဖယ်ပြီး၊ ကျန်သောအကွက်များကို ", " (Comma & Space) ဖြင့် ပြန်ဆက်ခြင်း 🌟
+                    remaining_moves = moves_list[1:]
+                    new_moves_string = ", ".join(remaining_moves) # ဥပမာ: "g1f3, e7e5, d2d4" အဖြစ် ပြောင်းသွားမည်
+                    
                     new_solution_list_str = json.dumps([new_moves_string])
                     
                     diag_no = len(level_buckets[lvl][chap]) + 1
-                    
-                    # 🌟 (အသစ်) Title နှင့် Description ကို ဖန်တီးခြင်း 🌟
-                    title = f"{chap_name} ({rating_range})" # ဥပမာ: "Opening (1000-1199)"
-                    description = themes.replace(" ", ", ") # Lichess Tag များကို ကော်မာခံ၍ ပြမည်
+                    title = f"{chap_name} ({rating_range})" 
+                    description = themes.replace(" ", ", ") 
                     
                     level_buckets[lvl][chap].append((new_fen, new_solution_list_str, chap, diag_no, title, description))
                 except: pass 
@@ -87,7 +86,6 @@ def build_databases():
         conn = sqlite3.connect(db_name)
         cursor = conn.cursor()
         
-        # 🌟 (အသစ်) Table တွင် title နှင့် description Column အသစ်များ ထည့်သွင်းခြင်း 🌟
         cursor.execute('''
             CREATE TABLE puzzles (
                 id INTEGER PRIMARY KEY AUTOINCREMENT, 
