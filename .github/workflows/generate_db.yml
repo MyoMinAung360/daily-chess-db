@@ -1,0 +1,28 @@
+name: Generate Puzzle DBs
+
+on:
+  workflow_dispatch: # 🌟 ဒီစာကြောင်းက Github တွင် "Run" ခလုတ်ကို ပေါ်စေပါသည် 🌟
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install Chess Library
+        run: pip install chess
+
+      - name: Run Python Script
+        run: python build_db.py
+
+      - name: Upload Databases as ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: SQLite-Databases
+          path: "*.db"
