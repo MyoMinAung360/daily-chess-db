@@ -61,23 +61,23 @@ def fetch_new_games():
     
     print(f"🚀 Lichess မှ Master Games အသစ်များကို စတင်ရှာဖွေနေပါသည်...\n")
 
+    # 🌟 GitHub Secret မှ Lichess Token ကို ယူမည်
+    lichess_token = os.environ.get("LICHESS_TOKEN")
+
     for player in GM_ACCOUNTS:
         print(f"⏳ {player} ၏ နောက်ဆုံးပွဲစဉ်များကို စစ်ဆေးနေသည်...")
         url = f"https://lichess.org/api/games/user/{player}"
         
         try:
-            lichess_token = os.environ.get("LICHESS_TOKEN")
-            
+            # 🌟 Headers ထဲသို့ Token ထည့်သွင်းခြင်း
             headers = {
                 'User-Agent': 'DailyChessApp/1.0 (https://github.com/MyoMinAung360/daily-chess-db)',
                 'Accept': 'application/x-chess-pgn'
             }
             
-            # Token ရှိမှသာ Authorization ကို ထည့်မည် (Local တွင် စမ်းရန်နှင့် GitHub တွင် Runရန် အဆင်ပြေစေရန်)
             if lichess_token:
                 headers['Authorization'] = f'Bearer {lichess_token}'
             
-            url = f"https://lichess.org/api/games/user/{player}?max={GAMES_PER_PLAYER}"
             response = requests.get(url, headers=headers)
             
             if response.status_code == 200:
