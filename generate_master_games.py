@@ -72,7 +72,7 @@ def fetch_new_games():
 
     for player in GM_ACCOUNTS:
         print(f"⏳ {player} ၏ နောက်ဆုံးပွဲစဉ်များကို စစ်ဆေးနေသည်...")
-        url = f"https://lichess.org/api/games/user/{player}"
+        url = f"https://lichess.org/api/games/user/{player}?max={GAMES_PER_PLAYER}"
         
         try:
             # 🌟 Headers ထဲသို့ Token ထည့်သွင်းခြင်း
