@@ -113,6 +113,7 @@ def fetch_new_games():
                     
             else:
                 print(f"❌ {player} အတွက် ဆွဲယူမှု မအောင်မြင်ပါ။ (Code: {response.status_code})")
+                print(f"📄 Lichess Response: {response.text[:300]}") # Lichess က ပို့လိုက်တဲ့ အကြောင်းရင်းကို ကြည့်ရန်
         except Exception as e:
             print(f"❌ Error: {e}")
             
