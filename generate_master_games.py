@@ -66,7 +66,13 @@ def fetch_new_games():
         url = f"https://lichess.org/api/games/user/{player}?max={GAMES_PER_PLAYER}&perfType=blitz,rapid,classical"
         
         try:
-            response = requests.get(url, headers={'Accept': 'application/x-chess-pgn'})
+            # 🌟 User-Agent ထည့်သွင်းထားသော headers
+            headers = {
+                'User-Agent': 'DailyChessApp/1.0 (https://github.com/MyoMinAung360/daily-chess-db)',
+                'Accept': 'application/x-chess-pgn'
+            }
+            
+            response = requests.get(url, headers=headers)
             
             if response.status_code == 200:
                 pgn_io = io.StringIO(response.text)
