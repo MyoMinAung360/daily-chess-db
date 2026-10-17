@@ -28,8 +28,14 @@ def ensure_directories():
 def load_history():
     """ယခင်ဆွဲယူပြီးသား ပွဲစဉ် ID များကို ပြန်ဖတ်မည်"""
     if os.path.exists(HISTORY_FILE):
-        with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f) # အစဉ်လိုက် မှတ်ထားနိုင်ရန် List အနေဖြင့် ထုတ်မည်
+        try:
+            with open(HISTORY_FILE, 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+                if not content:
+                    return []
+                return json.loads(content)
+        except json.JSONDecodeError:
+            return [] # ဖိုင်ဒေတာ ပျက်နေပါက အလွတ် List ကို ပြန်ပေးမည်
     return []
 
 def save_history(history_list):
