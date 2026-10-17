@@ -66,12 +66,18 @@ def fetch_new_games():
         url = f"https://lichess.org/api/games/user/{player}"
         
         try:
-            # 🌟 User-Agent ထည့်သွင်းထားသော headers
+            lichess_token = os.environ.get("LICHESS_TOKEN")
+            
             headers = {
                 'User-Agent': 'DailyChessApp/1.0 (https://github.com/MyoMinAung360/daily-chess-db)',
                 'Accept': 'application/x-chess-pgn'
             }
             
+            # Token ရှိမှသာ Authorization ကို ထည့်မည် (Local တွင် စမ်းရန်နှင့် GitHub တွင် Runရန် အဆင်ပြေစေရန်)
+            if lichess_token:
+                headers['Authorization'] = f'Bearer {lichess_token}'
+            
+            url = f"https://lichess.org/api/games/user/{player}?max={GAMES_PER_PLAYER}"
             response = requests.get(url, headers=headers)
             
             if response.status_code == 200:
