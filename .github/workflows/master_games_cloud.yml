@@ -23,6 +23,8 @@ permissions:
 jobs:
   run-cloud-worker:
     runs-on: ubuntu-latest
+    env:
+      LICHESS_TOKEN: ${{ secrets.LICHESS_TOKEN }}  # 🌟 ဤနေရာတွင် ထည့်သွင်းပေးရန်
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
