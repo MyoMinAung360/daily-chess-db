@@ -63,7 +63,7 @@ def fetch_new_games():
 
     for player in GM_ACCOUNTS:
         print(f"⏳ {player} ၏ နောက်ဆုံးပွဲစဉ်များကို စစ်ဆေးနေသည်...")
-        url = f"https://lichess.org/api/games/user/{player}?max={GAMES_PER_PLAYER}&perfType=blitz,rapid,classical"
+        url = f"https://lichess.org/api/games/user/{player}?max={GAMES_PER_PLAYER}"
         
         try:
             # 🌟 User-Agent ထည့်သွင်းထားသော headers
