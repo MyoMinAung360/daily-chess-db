@@ -96,7 +96,7 @@ def fetch_new_games():
 
         print(f"⏳ {player} ၏ နောက်ဆုံးပွဲစဉ်များကို စစ်ဆေးနေသည်...")
         # ကစားသမားတစ်ဦးစီထံမှ Recent Games အနည်းငယ် ရယူမည်
-        url = f"https://lichess.org/api/games/user/{player}?max=10"
+        url = f"https://lichess.org/api/games/user/{player}?max=18"
         
         try:
             response = requests.get(url, headers=headers)
