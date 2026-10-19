@@ -53,9 +53,9 @@ def save_versions(versions):
         json.dump(versions, f, indent=4)
 
 def fetch_top_players(headers, limit=100):
-    """Lichess Leaderboard မှ ထိပ်တန်း ကစားသမားစာရင်းကို Dynamic Fetch လုပ်မည်"""
-    print("🏆 Lichess Top Leaderboard ကစားသမားစာရင်းကို ရယူနေပါသည်...")
-    url = f"https://lichess.org/api/player/top/{limit}/classical" # Classical/Blitz/Rapid ကြိုက်ရာ ပြောင်းနိုင်ပါသည်
+    """Lichess Rapid Leaderboard မှ ထိပ်တန်း ကစားသမားစာရင်းကို Dynamic Fetch လုပ်မည်"""
+    print("🏆 Lichess Rapid Leaderboard ကစားသမားစာရင်းကို ရယူနေပါသည်...")
+    url = f"https://lichess.org/api/player/top/{limit}/rapid"
     try:
         response = requests.get(url, headers=headers)
         if response.status_code == 200:
@@ -84,7 +84,6 @@ def fetch_new_games():
     if lichess_token:
         headers['Authorization'] = f'Bearer {lichess_token}'
 
-    # Top Players စာရင်းကို ရယူခြင်း
     top_players = fetch_top_players(headers, limit=100)
 
     print("🚀 Lichess မှ Master Games အသစ်များကို စတင်ရှာဖွေနေပါသည်...\n")
@@ -95,8 +94,8 @@ def fetch_new_games():
             break
 
         print(f"⏳ {player} ၏ နောက်ဆုံးပွဲစဉ်များကို စစ်ဆေးနေသည်...")
-        # ကစားသမားတစ်ဦးစီထံမှ Recent Games အနည်းငယ် ရယူမည်
-        url = f"https://lichess.org/api/games/user/{player}?max=18"
+        # rated=true ထည့်သွင်းခြင်းဖြင့် Rating မကျသော Casual ပွဲများကို အလိုအလျောက် ပယ်ထုတ်မည်
+        url = f"https://lichess.org/api/games/user/{player}?max=18&rated=true&perf=classical,rapid,blitz"
         
         try:
             response = requests.get(url, headers=headers)
@@ -158,17 +157,15 @@ def update_today_file(new_games, history_list):
 
     print(f"\n🎉 ပွဲအသစ် စုစုပေါင်း {len(new_games)} ပွဲ ရရှိပါသည်။ '{today_str}.json' သို့ Update လုပ်ပါမည်။")
 
-    # ၁။ ပွဲစဉ်အသစ်များကို JSON ဖိုင်ထဲသို့ ရေးသားခြင်း
     out_path = os.path.join(OUTPUT_DIR, f"{today_str}.json")
     with open(out_path, 'w', encoding='utf-8') as f:
         json.dump(new_games, f, ensure_ascii=False, indent=2)
 
-    # ၂။ Version နံပါတ် အပ်ဒိတ်လုပ်ခြင်း
     versions = load_versions()
     versions[today_str] += 1
     save_versions(versions)
 
-    # ၃။ Atomic Operation: ဖိုင် ရေးသားပြီးမြောက်မှသာ seen_games.json ကို သိမ်းဆည်းမည်
+    # ဖိုင်ရေးပြီးမှ အောင်မြင်စွာ seen_games.json ကို သိမ်းမည်
     save_history(history_list)
     
     print(f"✅ {today_str}.json ကို Version {versions[today_str]} ဖြင့် အောင်မြင်စွာ Update ပြုလုပ်ပြီးပါပြီ!")
